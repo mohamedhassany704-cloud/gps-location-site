@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <title>تسجيل الموقع الجغرافي</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <div class="pin" aria-hidden="true">📍</div>
+      <h1>تسجيل الموقع الجغرافي</h1>
+      <p class="subtitle">اضغط على الزر للسماح بتحديد موقعك الحالي وتسجيله.</p>
+
+      <div class="privacy">
+        <strong>تنبيه:</strong>
+        سيتم إرسال إحداثيات موقعك إلى النظام بعد موافقتك على طلب الموقع من المتصفح.
+      </div>
+
+      <button id="locationBtn" type="button">تسجيل موقعي الآن</button>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+
+      <div id="details" class="details hidden">
+        <div><span>خط العرض (Latitude)</span><strong id="latitude">—</strong></div>
+        <div><span>خط الطول (Longitude)</span><strong id="longitude">—</strong></div>
+        <div><span>دقة الموقع التقريبية</span><strong id="accuracy">—</strong></div>
+        <a id="mapLink" href="#" target="_blank" rel="noopener noreferrer">عرض الموقع على الخريطة</a>
+      </div>
+    </section>
+    <footer>يجب السماح بإذن الموقع وتشغيل خدمات الموقع على الجهاز.</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
