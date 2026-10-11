@@ -1,27 +1,36 @@
 ```javascript
+"use strict";
+
+// Supabase configuration
 const SUPABASE_URL = "https://egyxjmhggzrobmtcnpfc.supabase.co";
 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVneXhqbWhnZ3pyb2JtdGNucGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MTM4ODgsImV4cCI6MjEwNzI4OTg4OH0.Ikl3vd35Mx3PYx794gNvO1nhaCtx5phT-RTfVgddTiU";
 
+// Page elements
 const locationBtn = document.getElementById("locationBtn");
 const statusEl = document.getElementById("status");
 const detailsEl = document.getElementById("details");
 
 function showStatus(message, type = "info") {
+  if (!statusEl) {
+    console.error("Element #status was not found in index.html");
+    return;
+  }
+
   statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+  statusEl.className = "status " + type;
 }
 
 function isSupabaseConfigured() {
   return (
     SUPABASE_URL === "https://egyxjmhggzrobmtcnpfc.supabase.co" &&
-    SUPABASE_ANON_KEY.trim() !== ""
+    SUPABASE_ANON_KEY.trim().length > 0
   );
 }
 
 function getCurrentPosition() {
-  return new Promise((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
+  return new Promise(function (resolve, reject) {
+    if (!navigator.geolocation) {
       reject({ code: "UNSUPPORTED" });
       return;
     }
@@ -60,14 +69,14 @@ function readableLocationError(error) {
 
 async function saveLocation(coords) {
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/locations`,
+    SUPABASE_URL + "/rest/v1/locations",
     {
       method: "POST",
       headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
         "Content-Type": "application/json",
-        Prefer: "return=minimal"
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify({
         latitude: coords.latitude,
@@ -80,70 +89,97 @@ async function saveLocation(coords) {
 
   if (!response.ok) {
     const detail = await response.text();
-    console.error("Supabase error:", response.status, detail);
+
+    console.error(
+      "Supabase error:",
+      response.status,
+      detail
+    );
 
     throw new Error(
-      `فشل حفظ الموقع (HTTP ${response.status}). راجع Console وإعدادات Supabase.`
+      "فشل حفظ الموقع (HTTP " + response.status + "). راجع Console وإعدادات Supabase."
     );
   }
 }
 
-locationBtn.addEventListener("click", async () => {
-  detailsEl.classList.add("hidden");
+if (!locationBtn) {
+  console.error("Element #locationBtn was not found in index.html");
+} else {
+  locationBtn.addEventListener("click", async function () {
+    if (detailsEl) {
+      detailsEl.classList.add("hidden");
+    }
 
-  if (!isSupabaseConfigured()) {
-    showStatus("راجع إعدادات Supabase داخل ملف app.js.", "error");
-    return;
-  }
+    if (!isSupabaseConfigured()) {
+      showStatus("راجع إعدادات Supabase داخل ملف app.js.", "error");
+      return;
+    }
 
-  if (!window.isSecureContext) {
-    showStatus("يجب فتح الموقع عبر HTTPS.", "error");
-    return;
-  }
+    if (!window.isSecureContext) {
+      showStatus("يجب فتح الموقع عبر HTTPS.", "error");
+      return;
+    }
 
-  locationBtn.disabled = true;
-  locationBtn.textContent = "جارٍ تحديد موقعك...";
+    locationBtn.disabled = true;
+    locationBtn.textContent = "جارٍ تحديد موقعك...";
 
-  showStatus("اسمح للمتصفح بالوصول إلى موقعك.", "info");
+    showStatus("اسمح للمتصفح بالوصول إلى موقعك.", "info");
 
-  try {
-    const position = await getCurrentPosition();
-    const coords = position.coords;
+    try {
+      const position = await getCurrentPosition();
+      const coords = position.coords;
 
-    document.getElementById("latitude").textContent =
-      coords.latitude.toFixed(6);
+      const latitudeEl = document.getElementById("latitude");
+      const longitudeEl = document.getElementById("longitude");
+      const accuracyEl = document.getElementById("accuracy");
+      const mapLinkEl = document.getElementById("mapLink");
 
-    document.getElementById("longitude").textContent =
-      coords.longitude.toFixed(6);
+      if (latitudeEl) {
+        latitudeEl.textContent = coords.latitude.toFixed(6);
+      }
 
-    document.getElementById("accuracy").textContent =
-      Number.isFinite(coords.accuracy)
-        ? `حوالي ${Math.round(coords.accuracy)} متر`
-        : "غير متاحة";
+      if (longitudeEl) {
+        longitudeEl.textContent = coords.longitude.toFixed(6);
+      }
 
-    document.getElementById("mapLink").href =
-      `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`;
+      if (accuracyEl) {
+        accuracyEl.textContent = Number.isFinite(coords.accuracy)
+          ? "حوالي " + Math.round(coords.accuracy) + " متر"
+          : "غير متاحة";
+      }
 
-    showStatus("تم تحديد الموقع. جارٍ تسجيله...", "info");
+      if (mapLinkEl) {
+        mapLinkEl.href =
+          "https://www.google.com/maps?q=" +
+          coords.latitude +
+          "," +
+          coords.longitude;
+      }
 
-    await saveLocation(coords);
+      showStatus("تم تحديد الموقع. جارٍ تسجيله...", "info");
 
-    detailsEl.classList.remove("hidden");
-    showStatus("✅ تم تسجيل موقعك بنجاح.", "success");
+      await saveLocation(coords);
 
-  } catch (error) {
-    console.error(error);
+      if (detailsEl) {
+        detailsEl.classList.remove("hidden");
+      }
 
-    const message =
-      error && typeof error.code === "number"
-        ? readableLocationError(error)
-        : error.message || "حدث خطأ غير متوقع.";
+      showStatus("تم تسجيل موقعك بنجاح.", "success");
 
-    showStatus(`❌ ${message}`, "error");
+    } catch (error) {
+      console.error(error);
 
-  } finally {
-    locationBtn.disabled = false;
-    locationBtn.textContent = "تسجيل موقعي الآن";
-  }
-});
+      const message =
+        error && typeof error.code === "number"
+          ? readableLocationError(error)
+          : error.message || "حدث خطأ غير متوقع.";
+
+      showStatus("فشل التسجيل: " + message, "error");
+
+    } finally {
+      locationBtn.disabled = false;
+      locationBtn.textContent = "تسجيل موقعي الآن";
+    }
+  });
+}
 ```
