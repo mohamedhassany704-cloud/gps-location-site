@@ -1,9 +1,6 @@
 ```javascript
-/*
-  إعدادات Supabase
-  لا تستخدم service_role key في الواجهة الأمامية.
-*/
 const SUPABASE_URL = "https://egyxjmhggzrobmtcnpfc.supabase.co";
+
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVneXhqbWhnZ3pyb2JtdGNucGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MTM4ODgsImV4cCI6MjEwNzI4OTg4OH0.Ikl3vd35Mx3PYx794gNvO1nhaCtx5phT-RTfVgddTiU";
 
 const locationBtn = document.getElementById("locationBtn");
@@ -15,7 +12,11 @@ function showStatus(message, type = "info") {
   statusEl.className = `status ${type}`;
 }
 
-function isSupabaseConfigured() { return true; };
+function isSupabaseConfigured() {
+  return (
+    SUPABASE_URL === "https://egyxjmhggzrobmtcnpfc.supabase.co" &&
+    SUPABASE_ANON_KEY.trim() !== ""
+  );
 }
 
 function getCurrentPosition() {
@@ -43,7 +44,7 @@ function readableLocationError(error) {
   }
 
   if (error.code === 1) {
-    return "لم تسمح بالوصول إلى الموقع. فعّل إذن الموقع من إعدادات المتصفح ثم حاول مرة أخرى.";
+    return "لم تسمح بالوصول إلى الموقع. فعّل إذن الموقع من إعدادات المتصفح.";
   }
 
   if (error.code === 2) {
@@ -54,7 +55,7 @@ function readableLocationError(error) {
     return "استغرق تحديد الموقع وقتًا طويلًا. حاول مرة أخرى.";
   }
 
-  return "حدث خطأ أثناء تحديد الموقع. حاول مرة أخرى.";
+  return "حدث خطأ أثناء تحديد الموقع.";
 }
 
 async function saveLocation(coords) {
@@ -63,10 +64,10 @@ async function saveLocation(coords) {
     {
       method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
-        "Prefer": "return=minimal"
+        Prefer: "return=minimal"
       },
       body: JSON.stringify({
         latitude: coords.latitude,
@@ -79,27 +80,10 @@ async function saveLocation(coords) {
 
   if (!response.ok) {
     const detail = await response.text();
-
-    console.error(
-      "Supabase insert error:",
-      response.status,
-      detail
-    );
-
-    if (response.status === 401 || response.status === 403) {
-      throw new Error(
-        "Supabase رفض التسجيل. راجع المفتاح وسياسات RLS."
-      );
-    }
-
-    if (response.status === 404) {
-      throw new Error(
-        "جدول locations غير موجود أو اسم الجدول غير صحيح."
-      );
-    }
+    console.error("Supabase error:", response.status, detail);
 
     throw new Error(
-      `فشل حفظ الموقع (HTTP ${response.status}). راجع Console لمعرفة التفاصيل.`
+      `فشل حفظ الموقع (HTTP ${response.status}). راجع Console وإعدادات Supabase.`
     );
   }
 }
@@ -113,20 +97,14 @@ locationBtn.addEventListener("click", async () => {
   }
 
   if (!window.isSecureContext) {
-    showStatus(
-      "يجب فتح الموقع عبر HTTPS حتى يعمل تحديد الموقع.",
-      "error"
-    );
+    showStatus("يجب فتح الموقع عبر HTTPS.", "error");
     return;
   }
 
   locationBtn.disabled = true;
   locationBtn.textContent = "جارٍ تحديد موقعك...";
 
-  showStatus(
-    "اسمح للمتصفح بالوصول إلى موقعك عند ظهور الطلب.",
-    "info"
-  );
+  showStatus("اسمح للمتصفح بالوصول إلى موقعك.", "info");
 
   try {
     const position = await getCurrentPosition();
@@ -159,7 +137,7 @@ locationBtn.addEventListener("click", async () => {
     const message =
       error && typeof error.code === "number"
         ? readableLocationError(error)
-        : (error.message || "حدث خطأ غير متوقع أثناء التسجيل.");
+        : error.message || "حدث خطأ غير متوقع.";
 
     showStatus(`❌ ${message}`, "error");
 
