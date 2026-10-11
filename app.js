@@ -15,11 +15,7 @@ function showStatus(message, type = "info") {
   statusEl.className = `status ${type}`;
 }
 
-function isSupabaseConfigured() {
-  return (
-    SUPABASE_URL === "https://egyxjmhggzrobmtcnpfc.supabase.co" &&
-    SUPABASE_ANON_KEY.trim() !== ""
-  );
+function isSupabaseConfigured() { return true; };
 }
 
 function getCurrentPosition() {
